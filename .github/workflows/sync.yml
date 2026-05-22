@@ -2,8 +2,8 @@ name: Sync rule/Surge from upstream
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # 每天北京时间10点
-  workflow_dispatch:       # 也可以手动触发
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -17,14 +17,19 @@ jobs:
           git remote add upstream https://github.com/blackmatrix7/ios_rule_script.git
           git fetch upstream master
 
-      - name: Sync rule/Surge only
+      - name: Clean and sync rule/Surge only
         run: |
+          # 删除除了 .github 和 rule 之外的所有内容
+          find . -maxdepth 1 ! -name '.' ! -name '.git' ! -name '.github' ! -name 'rule' -exec rm -rf {} +
+          # 只保留 rule/Surge，删除其他
+          find rule -maxdepth 1 ! -name 'rule' ! -name 'Surge' -exec rm -rf {} +
+          # 从上游同步最新的 rule/Surge
           git checkout upstream/master -- rule/Surge
 
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add rule/Surge
-          git diff --cached --quiet || git commit -m "sync rule/Surge from upstream $(date +'%Y-%m-%d')"
+          git add -A
+          git diff --cached --quiet || git commit -m "clean up and sync rule/Surge $(date +'%Y-%m-%d')"
           git push
